@@ -53,15 +53,20 @@ export const signUp = async (req, res) => {
 };
 export const login = async (req, res) => {
   try {
+    // console.log("dfadsf")
     const { username, password } = req.body;
     // if (!username || !password) {
     //   return res.status(400).json({ error: "Missing username or password" });
     // }
     const user = await User.findOne({ username });
+    // console.log(username)
+    // console.log(password);
+    console.log(user);
     const isPasswordCorrect = await bcrypt.compare(
       password,
       user?.password || ""
     );
+    console.log("df")
     if (!user || !isPasswordCorrect) {
       return res.status(400).json({ error: "invalid username password" });
     }

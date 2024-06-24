@@ -1,16 +1,20 @@
 import Conversation from "../models/conversation.model.js";
+import { getReceiverSocketId, io } from "../socket/socket.js";
 import Message from "./../models/message.model.js";
 
 export const sendMessage = async (req, res) => {
   try {
     const { message } = req.body;
+    console.log(message)
     const { id: receiverId } = req.params;
     console.log(receiverId);
     const senderId = req.user._id;
     let conversation = await Conversation.findOne({
       participants: { $all: [senderId, receiverId] },
     });
+    
     if (!conversation) {
+      console.log('ab')
       conversation = await Conversation.create({
         participants: [senderId, receiverId],
       });
@@ -25,11 +29,16 @@ export const sendMessage = async (req, res) => {
       conversation.messages.push(newMessage._id);
     }
     //socket io funtionality
+    await Promise.all([conversation.save(), newMessage.save()]);
+    res.status(201).json({ newMessage });
+    const  receiverSocketId=getReceiverSocketId(receiverId)
+    if(receiverSocketId){
+      // send to specific client
+      io.to(receiverSocketId).emit("newMessage",newMessage)
+    }
 
     // await conversation.save();
     // await newMessage.save();
-    await Promise.all([conversation.save(), newMessage.save()]);
-    res.status(201).json({ newMessage });
   } catch (error) {
     console.log("Error in send message controller:", error.message);
     res.status(500).json({ error: "internal server error" });
